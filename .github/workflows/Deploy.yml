@@ -1,0 +1,38 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - openapi-def
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Lint YAML definition files
+        uses: nwestfall/openapi-action@v1.0.1
+        with:
+          file: NextBus.yaml
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+  deploy:
+    if: github.event_name == 'push'
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Generate Swagger UI static webpage
+        uses: Legion2/swagger-ui-action@v1.0.1
+        with:
+          output: webpage-output
+          version: '^3.0.0' # may be updated later
+          spec-file: NextBus.yaml
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: webpage-output
+          publish_branch: swagger-ui

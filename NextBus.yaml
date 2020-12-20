@@ -1,0 +1,565 @@
+openapi: "3.0.0"
+info:
+  title: NUS NextBus
+  description: "***Unofficially reverse-engineered API*** used by NUS NextBus application."
+  termsOfService: http://nus.edu.sg/registrar/docs/info/registration-guides/aup-form.pdf
+  version: 2.0.0
+  contact:
+    name: Hu Jialun
+    url: https://github.com/SuibianP
+    email: hujialun@outlook.sg
+  license:
+    name: DISCLAIMER
+    url: https://github.com/SuibianP/nus-nextbus-new-api/blob/openapi-def/DISCLAIMER.md
+servers:
+  - url: https://nnextbus.nus.edu.sg
+    description: Current server used by NUS NextBus app
+  - url: https://nextbus.comfortdelgro.com.sg/eventservice.svc
+    description: OBSOLETE DEPRECATED server preserved merely for historical significance
+
+paths:
+  /publicity:
+    get:
+      summary: Get Publicity
+      description: Get all publicity information.
+      operationId: GetPublicity
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  banners:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        begin:
+                          type: string
+                          format: date-time
+                        description:
+                          type: string
+                        enabled:
+                          type: boolean
+                        end:
+                          type: string
+                          format: date-time
+                        form:
+                          type: object
+                          properties:
+                            input_label1:
+                              type: string
+                            input_label2:
+                              type: string
+                        id:
+                          type: integer
+                        img_url:
+                          type: string
+                          format: hostname
+                        link_url:
+                          type: string
+                          format: hostname
+                        name:
+                          type: string
+                        priority:
+                          type: integer
+                        type:
+                          type: string
+                          enum:
+                            - IMG
+                            - IMG_FORM
+                            - IMG_LINK
+                  frequency:
+                    type: integer
+        401:
+          $ref: '#/components/responses/401'
+  /BusStops:
+    get:
+      summary: Get list of bus stops
+      description: Get information about bus stops
+      operationId: GetListOfBusStops
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  BusStopsResult:
+                    type: object
+                    properties:
+                      busstops:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            LongName:
+                              type: string
+                            ShortName:
+                              type: string
+                            caption:
+                              type: string
+                            latitude:
+                              type: number
+                              format: double
+                            longitude:
+                              type: number
+                              format: double
+                            name:
+                              type: string
+        401:
+          $ref: '#/components/responses/401'
+  /PickupPoint:
+    get:
+      summary: Get pickup point
+      description: Get all pickup points of a specified route
+      operationId: GetPickupPoint
+      parameters:
+        - $ref: '#/components/parameters/route_code'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  PickupPointResult:
+                    type: object
+                    properties:
+                      pickuppoint:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            LongName:
+                              type: string
+                            ShortName:
+                              type: string
+                            busstopcode:
+                              type: string
+                            lat:
+                              type: number
+                              format: double
+                            lng:
+                              type: number
+                              format: double
+                            pickupname:
+                              type: string
+                            routeid:
+                              type: integer
+        404:
+          $ref: '#/components/responses/404-service'
+        401:
+          $ref: '#/components/responses/401'
+  /ShuttleService:
+    get:
+      summary: Get shuttle service
+      description: Get all oncoming shuttle bus services at a specified stop
+      operationId: GetShuttleService
+      parameters:
+        - $ref: '#/components/parameters/busstopname'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ShuttleServiceResult:
+                    type: object
+                    properties:
+                      Timestamp:
+                        type: string
+                        format: date-time
+                      caption:
+                          type: string
+                      name:
+                        format: string
+                      shuttles:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            arrivalTime:
+                              type: string
+                              pattern: '^-?\d*$'
+                            arrivalTime_veh_plate:
+                              type: string
+                            name:
+                              type: string
+                            nextArrivalTime:
+                              type: string
+                              pattern: '^-?\d*$'
+                            nextArrivalTime_veh_plate:
+                              type: string
+                            nextPassengers:
+                              type: string
+                            passengers:
+                              type: string
+        404:
+          $ref: '#/components/responses/404-busstop'
+
+        401:
+          $ref: '#/components/responses/401'
+  /ActiveBus:
+    get:
+      summary: Get active bus
+      description: Get all active bus of a specified route
+      operationId: GetActiveBus
+      parameters:
+        - $ref: '#/components/parameters/route_code'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ActiveBusResult:
+                    type: object
+                    properties:
+                      ActiveBusCount:
+                          type: string
+                          pattern: '^\d*$'
+                      Timestamp:
+                        type: string
+                        format: date-time
+                      activebus:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            direction:
+                              type: integer
+                            lat:
+                              type: number
+                              format: float
+                            lng:
+                              type: number
+                              format: float
+                            speed:
+                              type: integer
+                            veh_plate:
+                              type: string
+        401:
+          $ref: '#/components/responses/401'
+        404:
+          $ref: '#/components/responses/404-service'
+  /BusLocation:
+    get:
+      summary: Get bus location
+      description: Get information about a specific bus by vehicle plate
+      operationId: GetBusLocation
+      parameters:
+        - $ref: '#/components/parameters/veh_plate'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  BusLocationResult:
+                    type: object
+                    properties:
+                      direction:
+                        type: integer
+                      lat:
+                        type: number
+                        format: float
+                      lng:
+                        type: number
+                        format: float
+                      speed:
+                        type: integer
+                      status:
+                        type: string
+                        enum:
+                          - "true"
+                          - "false"
+                      vehplate:
+                        type: string
+        401:
+          $ref: '#/components/responses/401'
+        500:
+          $ref: '#/components/responses/500'
+  /RouteMinMaxTime:
+    get:
+      summary: Get route min max time
+      description: Get the minimum and maximum operating time of a route
+      operationId: GetRouteMinMaxTime
+      parameters:
+        - $ref: '#/components/parameters/route_code'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  RouteMinMaxTimeResult:
+                    type: object
+                    properties:
+                      RouteMinMaxTime:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            DayType:
+                              type: string
+                              enum:
+                                - Mon-Fri
+                                - Sat
+                                - Sun/PH
+                            DisplayOrder:
+                              type: string
+                              pattern: '^\d+$'
+                            FirstTime:
+                              type: string
+                              pattern: '^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$'
+                            LastTime:
+                              type: string
+                              pattern: '^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$'
+                            ScheduleType:
+                              type: string
+                              enum:
+                                - Term
+                                - Vacation
+        404:
+          $ref: '#/components/responses/404-service'
+        401:
+          $ref: '#/components/responses/401'
+  /ServiceDescription:
+    get:
+      summary: Get service description
+      description: Get brief path for each route
+      operationId: GetServiceDescription
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ServiceDescriptionResult:
+                    type: object
+                    properties:
+                      ServiceDescription:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            Route:
+                              type: string
+                            RouteDescription:
+                              type: string
+        401:
+          $ref: '#/components/responses/401'
+  /Announcements:
+    get:
+      summary: Get announcements
+      description: Get all announcements
+      operationId: GetAnnouncements
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  AnnouncementsResult:
+                    type: object
+                    properties:
+                      Announcement:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            Affected_Service_Ids:
+                              type: string
+                            Created_By:
+                              type: string
+                            Created_On:
+                              type: string
+                              format: date-time
+                            ID:
+                              type: string
+                              pattern: '^\d+$'
+                            Priority:
+                              type: string
+                              pattern: '^\d+$'
+                            Status:
+                              type: string
+                              enum:
+                                - Enabled
+                                - Disabled
+                            Text:
+                              type: string
+                      TimeStamp:
+                        type: string
+                        format: date-time
+        401:
+          $ref: '#/components/responses/401'
+  /TickerTapes:
+    get:
+      summary: Get ticker tapes
+      description: Get all ticker tapes
+      operationId: GetTickerTapes
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  TickerTapesResult:
+                    type: object
+                    properties:
+                      TickerTape:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            Accident_Latitude:
+                              type: number
+                              format: double
+                            Accident_Longitude:
+                              type: number
+                              format: double
+                            Affected_Service_Ids:
+                              type: string
+                            Created_By:
+                              type: string
+                            Created_On:
+                              type: string
+                              format: date-time
+                            Display_From:
+                              type: string
+                              format: date-time
+                            Display_To:
+                              type: string
+                              format: date-time
+                            ID:
+                              type: string
+                              pattern: '^\d+$'
+                            Message:
+                              type: string
+                            Priority:
+                              type: string
+                              enum:
+                                - High
+                                - Medium
+                                - Low
+                            Status:
+                              type: string
+                              enum:
+                                - Enabled
+                                - Disabled
+                      TimeStamp:
+                        type: string
+                        format: date-time
+  /CheckPoint:
+    get:
+      summary: Get checkpoints
+      description: Get all checkpoints of a specified route
+      operationId: GetAllCheckpoints
+      parameters:
+        - $ref: '#/components/parameters/route_code'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  CheckPointResult:
+                    type: object
+                    properties:
+                      CheckPoint:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            PointID:
+                              type: string
+                              pattern: '\d+'
+                            latitude:
+                              type: number
+                              format: double
+                            longitude:
+                              type: number
+                              format: double
+                            routeid:
+                              type: integer
+
+components:
+  responses:
+    401:
+      description: Unauthorized
+      content:
+        text/html:
+          schema:
+            type: string
+            enum: [Unauthorized Access]
+    404-service:
+        description: Not Found
+        content:
+          text/html:
+            schema:
+              type: string
+              enum: [Service not found!]
+    404-busstop:
+      description: Not Found
+      content:
+        text/html:
+          schema:
+            type: string
+            enum: [Bus stop not found!]
+    500:
+      description: Internal Server Error
+      content:
+        text/html:
+          schema:
+            type: string
+            enum: ['<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+                    <title>500 Internal Server Error</title>
+                    <h1>Internal Server Error</h1>
+                    <p>The server encountered an internal error and was unable to complete your request.  Either the server is overloaded or there is an error in the application.</p>']
+  parameters:
+    route_code:
+      in: query
+      name: route_code
+      schema:
+        type: string
+        description: Code of the bus route
+    busstopname:
+      in: query
+      name: busstopname
+      schema:
+        type: string
+        description: Name of the bus stop
+    veh_plate:
+      in: query
+      name: veh_plate
+      schema:
+        type: string
+        description: Vehicle plate of a bus
+  securitySchemes:
+    Basic:
+      type: http
+      scheme: basic
+        
+security:
+  - Basic: []
