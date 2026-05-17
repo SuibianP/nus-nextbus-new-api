@@ -25,7 +25,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Generate Swagger UI static webpage
-        uses: Legion2/swagger-ui-action@v1.0.1
+        uses: Legion2/swagger-ui-action@v1.3.0
         with:
           output: webpage-output
           version: '^3.0.0' # may be updated later
