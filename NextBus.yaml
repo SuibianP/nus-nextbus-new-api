@@ -12,71 +12,242 @@ info:
     name: DISCLAIMER
     url: https://github.com/SuibianP/nus-nextbus-new-api/blob/openapi-def/DISCLAIMER.md
 servers:
+  - url: https://fms.connectx.com.sg/apiy/NUSETA
+    description: Current server used by uNivUS app
   - url: https://nnextbus.nus.edu.sg
-    description: Current server used by NUS NextBus app
+    description: Current server used by NUS NextBus app (possibly phasing out)
   - url: https://nextbus.comfortdelgro.com.sg/eventservice.svc
     description: OBSOLETE DEPRECATED server preserved merely for historical significance
 
 paths:
-  /publicity:
-    get:
-      summary: Get Publicity
-      description: Get all publicity information.
-      operationId: GetPublicity
+  /univus-public/mobile/get-access-token:
+    post:
+      tags:
+        - univus
+      servers:
+        - url: https://myizaac2.nus.edu.sg
+          description: uNivUS authentication server
+      summary: Get public access token
+      description: Authenticate as PUBLIC domain user and get JWT access token valid for 24 hours. No login required.
+      operationId: GetPublicAccessToken
+      security: []
+      parameters:
+        - in: header
+          name: X-HTD-API
+          required: true
+          schema:
+            type: string
+          description: HTD API key
+        - in: header
+          name: X-APP-API
+          required: true
+          schema:
+            type: string
+          description: App API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - deviceid
+                - ipaddr
+                - version
+              properties:
+                deviceid:
+                  type: string
+                  format: uuid
+                  description: Device UUID
+                ipaddr:
+                  type: string
+                  format: ipv4
+                  description: IP address
+                  example: 0.0.0.0
+                version:
+                  type: string
+                  description: App version
+                  example: 2.56.0
       responses:
-        '200':
+        200:
           description: OK
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  banners:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        begin:
-                          type: string
-                          format: date-time
-                        description:
-                          type: string
-                        enabled:
-                          type: boolean
-                        end:
-                          type: string
-                          format: date-time
-                        form:
+                  msg:
+                    type: string
+                  code:
+                    type: string
+                    pattern: '^\d{5}$'
+                  data:
+                    type: object
+                    properties:
+                      username:
+                        type: string
+                        example: User
+                      token:
+                        type: string
+                        description: JWT access token (RS256, valid 24h)
+                        example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+                      userid:
+                        type: string
+                        format: uuid
+                      domain:
+                        $ref: '#/components/schemas/Domain'
+                  ts:
+                    type: string
+                    pattern: '^\d{14}$'
+                    description: Timestamp (YYYYMMDDHHmmss)
+                    example: "20260517201045"
+        400:
+          description: Bad Request
+        500:
+          description: Internal Server Error
+  /univus/mobile/buswidget/get-init-data:
+    post:
+      tags:
+        - univus
+      servers:
+        - url: https://myizaac2.nus.edu.sg
+          description: uNivUS authentication server
+      summary: Get bus widget initialization data
+      description: Get FMS tokens (nextbus_token2), LTA DataMall token, route colors, and stop mappings. Requires access token from get-access-token endpoint.
+      operationId: GetBusWidgetInitData
+      # security:
+      #   - BusWidget: []
+      parameters:
+        - in: header
+          name: X-HTD-API
+          required: true
+          schema:
+            type: string
+          description: HTD API key
+        - in: header
+          name: X-APP-API
+          required: true
+          schema:
+            type: string
+          description: App API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - deviceid
+                - domain
+                - ipaddr
+                - token
+                - userid
+                - version
+              properties:
+                deviceid:
+                  type: string
+                  format: uuid
+                  description: Same device UUID from get-access-token
+                domain:
+                  $ref: '#/components/schemas/Domain'
+                ipaddr:
+                  type: string
+                  format: ipv4
+                  example: 0.0.0.0
+                token:
+                  type: string
+                  description: Access token from get-access-token
+                userid:
+                  type: string
+                  format: uuid
+                  description: User ID from access token response
+                version:
+                  type: string
+                  example: 2.56.0
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  code:
+                    type: string
+                    pattern: '^\d{5}$'
+                  data:
+                    type: object
+                    properties:
+                      tokens:
+                        type: object
+                        properties:
+                          datamall_token:
+                            type: string
+                            description: LTA DataMall API key
+                          nextbus_token:
+                            type: string
+                            description: DEPRECATED - Use nextbus_token2 instead (returns error 4)
+                          nextbus_token2:
+                            type: string
+                            description: FMS API token (use this for ConnectX FMS endpoints)
+                      bus_stops:
+                        type: array
+                        description: Bus stop ID to LTA stop code mapping
+                        items:
                           type: object
                           properties:
-                            input_label1:
+                            id:
                               type: string
-                            input_label2:
+                              description: Internal shuttle stop ID
+                              example: KR-MRT
+                            number:
                               type: string
-                        id:
-                          type: integer
-                        img_url:
-                          type: string
-                          format: hostname
-                        link_url:
-                          type: string
-                          format: hostname
-                        name:
-                          type: string
-                        priority:
-                          type: integer
-                        type:
-                          type: string
-                          enum:
-                            - IMG
-                            - IMG_FORM
-                            - IMG_LINK
-                  frequency:
-                    type: integer
+                              description: LTA public bus stop code
+                              example: "18331"
+                      bus-stop-color:
+                        type: array
+                        description: Route color configuration for UI
+                        items:
+                          type: object
+                          properties:
+                            BUS:
+                              type: string
+                              description: Route code
+                              example: A1
+                            COLOR_CODE:
+                              type: string
+                              pattern: '^[0-9A-F]{6}$'
+                              description: Background color (hex)
+                              example: FB0101
+                            COLOR_FONT:
+                              type: string
+                              pattern: '^[0-9A-F]{6}$'
+                              description: Font color (hex)
+                              example: FFFFFF
+                  ts:
+                    type: string
+                    pattern: '^\d{14}$'
         401:
-          $ref: '#/components/responses/401'
+          description: Unauthorized - Invalid or expired access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Fail to verify access token
+                  code:
+                    type: string
+                    example: "10000"
+        400:
+          description: Bad Request
   /BusStops:
     get:
+      tags:
+        - bus
       summary: Get list of bus stops
       description: Get information about bus stops
       operationId: GetListOfBusStops
@@ -114,6 +285,8 @@ paths:
           $ref: '#/components/responses/401'
   /PickupPoint:
     get:
+      tags:
+        - bus
       summary: Get pickup point
       description: Get all pickup points of a specified route
       operationId: GetPickupPoint
@@ -151,12 +324,16 @@ paths:
                               type: string
                             routeid:
                               type: integer
+                            seq:
+                              type: integer
         404:
           $ref: '#/components/responses/404-service'
         401:
           $ref: '#/components/responses/401'
   /ShuttleService:
     get:
+      tags:
+        - bus
       summary: Get shuttle service
       description: Get all oncoming shuttle bus services at a specified stop
       operationId: GetShuttleService
@@ -178,17 +355,41 @@ paths:
                         format: date-time
                       caption:
                           type: string
+                      hints:
+                        type: array
+                        items:
+                          type: string
                       name:
-                        format: string
+                        type: string
                       shuttles:
                         type: array
                         items:
                           type: object
                           properties:
+                            _etas:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  eta:
+                                    type: integer
+                                  eta_s:
+                                    type: integer
+                                  jobid:
+                                    type: integer
+                                  plate:
+                                    type: string
+                                  px:
+                                    type: string
+                                  ts:
+                                    type: string
+                                    format: date-time
                             arrivalTime:
                               type: string
                               pattern: '^-?\d*$'
                             arrivalTime_veh_plate:
+                              type: string
+                            busstopcode:
                               type: string
                             name:
                               type: string
@@ -201,6 +402,8 @@ paths:
                               type: string
                             passengers:
                               type: string
+                            routeid:
+                              type: integer
         404:
           $ref: '#/components/responses/404-busstop'
 
@@ -208,6 +411,8 @@ paths:
           $ref: '#/components/responses/401'
   /ActiveBus:
     get:
+      tags:
+        - bus
       summary: Get active bus
       description: Get all active bus of a specified route
       operationId: GetActiveBus
@@ -243,55 +448,34 @@ paths:
                             lng:
                               type: number
                               format: float
+                            loadInfo:
+                              type: object
+                              properties:
+                                capacity:
+                                  type: integer
+                                crowdLevel:
+                                  type: string
+                                  enum:
+                                    - low
+                                    - medium
+                                    - high
+                                occupancy:
+                                  type: number
+                                  format: double
+                                ridership:
+                                  type: integer
                             speed:
                               type: integer
-                            veh_plate:
+                            vehplate:
                               type: string
         401:
           $ref: '#/components/responses/401'
         404:
           $ref: '#/components/responses/404-service'
-  /BusLocation:
-    get:
-      summary: Get bus location
-      description: Get information about a specific bus by vehicle plate
-      operationId: GetBusLocation
-      parameters:
-        - $ref: '#/components/parameters/veh_plate'
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  BusLocationResult:
-                    type: object
-                    properties:
-                      direction:
-                        type: integer
-                      lat:
-                        type: number
-                        format: float
-                      lng:
-                        type: number
-                        format: float
-                      speed:
-                        type: integer
-                      status:
-                        type: string
-                        enum:
-                          - "true"
-                          - "false"
-                      vehplate:
-                        type: string
-        401:
-          $ref: '#/components/responses/401'
-        500:
-          $ref: '#/components/responses/500'
   /RouteMinMaxTime:
     get:
+      tags:
+        - bus
       summary: Get route min max time
       description: Get the minimum and maximum operating time of a route
       operationId: GetRouteMinMaxTime
@@ -313,12 +497,18 @@ paths:
                         items:
                           type: object
                           properties:
+                            Dates:
+                              type: string
+                            DayName:
+                              type: string
                             DayType:
                               type: string
                               enum:
                                 - Mon-Fri
                                 - Sat
-                                - Sun/PH
+                                - Sun
+                                - PH
+                                - Special Day
                             DisplayOrder:
                               type: string
                               pattern: '^\d+$'
@@ -328,6 +518,8 @@ paths:
                             LastTime:
                               type: string
                               pattern: '^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$'
+                            Route:
+                              type: string
                             ScheduleType:
                               type: string
                               enum:
@@ -339,6 +531,8 @@ paths:
           $ref: '#/components/responses/401'
   /ServiceDescription:
     get:
+      tags:
+        - bus
       summary: Get service description
       description: Get brief path for each route
       operationId: GetServiceDescription
@@ -362,10 +556,14 @@ paths:
                               type: string
                             RouteDescription:
                               type: string
+                            RouteLongName:
+                              type: string
         401:
           $ref: '#/components/responses/401'
   /Announcements:
     get:
+      tags:
+        - bus
       summary: Get announcements
       description: Get all announcements
       operationId: GetAnnouncements
@@ -405,6 +603,7 @@ paths:
                                 - Disabled
                             Text:
                               type: string
+                              format: html
                       TimeStamp:
                         type: string
                         format: date-time
@@ -412,6 +611,8 @@ paths:
           $ref: '#/components/responses/401'
   /TickerTapes:
     get:
+      tags:
+        - bus
       summary: Get ticker tapes
       description: Get all ticker tapes
       operationId: GetTickerTapes
@@ -471,6 +672,8 @@ paths:
                         format: date-time
   /CheckPoint:
     get:
+      tags:
+        - bus
       summary: Get checkpoints
       description: Get all checkpoints of a specified route
       operationId: GetAllCheckpoints
@@ -527,16 +730,6 @@ components:
           schema:
             type: string
             enum: [Bus stop not found!]
-    500:
-      description: Internal Server Error
-      content:
-        text/html:
-          schema:
-            type: string
-            enum: ['<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
-                    <title>500 Internal Server Error</title>
-                    <h1>Internal Server Error</h1>
-                    <p>The server encountered an internal error and was unable to complete your request.  Either the server is overloaded or there is an error in the application.</p>']
   parameters:
     route_code:
       in: query
@@ -550,16 +743,34 @@ components:
       schema:
         type: string
         description: Name of the bus stop
-    veh_plate:
-      in: query
-      name: veh_plate
-      schema:
-        type: string
-        description: Vehicle plate of a bus
+  schemas:
+    Domain:
+      type: string
+      enum:
+        - PUBLIC
+        - NUSSTU
+        - NUSSTF
+        - NUSEXT
+        - ALUMNI
+        - NUSU
+        - APPLICANT
+      example: PUBLIC
+      description: User domain/tenant
   securitySchemes:
-    Basic:
+    NextBus:
       type: http
       scheme: basic
-        
+    uNivUS:
+      type: apiKey
+      name: token
+      in: query
+      description: FMS access token (nextbus_token2) obtained from uNivUS buswidget endpoint
+    # BusWidget:
+    #   type: http
+    #   scheme: bearer
+    #   bearerFormat: JWT
+    #   description: JWT access token from get-access-token endpoint (NOT REQUIRED - token in body is used instead)
+
 security:
-  - Basic: []
+  - NextBus: []
+  - uNivUS: []
