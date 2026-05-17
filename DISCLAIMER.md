@@ -19,8 +19,13 @@ There is absolutely no warranty for This API, including but not limited to its a
 Good job reading all the way down here! You now deserve to know that:
 
 <!---
-The API uses HTTP basic access authentication.
+NextBus uses HTTP basic access authentication.
 The username is 'NUSnextbus',
 and the password is '13dL?zY,3feWR^"T'.
+
+uNivUS FMS endpoints require API keys:
+  X-HTD-API: 981c42c3-7e15-3de4-bebf-d02d71a4953f
+  X-APP-API: 0ee8aa45-6f31-34e6-a66e-d54f990c1a2d
+Flow: /get-access-token -> /get-init-data -> FMS endpoints.
 -->
 
